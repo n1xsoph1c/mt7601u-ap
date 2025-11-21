@@ -1491,7 +1491,13 @@ int RtmpOSNetDevAttach(
 		pNetDevOps->ndo_stop = pDevOpHook->stop;
 		pNetDevOps->ndo_start_xmit =
 		    (HARD_START_XMIT_FUNC) (pDevOpHook->xmit);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
+		pNetDevOps->ndo_siocdevprivate = pDevOpHook->ioctl;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+		pNetDevOps->ndo_eth_ioctl = pDevOpHook->ioctl;
+#else
 		pNetDevOps->ndo_do_ioctl = pDevOpHook->ioctl;
+#endif
 #else
 		pNetDev->open = pDevOpHook->open;
 		pNetDev->stop = pDevOpHook->stop;
@@ -1544,10 +1550,11 @@ int RtmpOSNetDevAttach(
 	}
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
-	pNetDevOps->ndo_validate_addr = NULL;
+	pNetDevOps->ndo_validate_addr = eth_validate_addr;
+	pNetDevOps->ndo_set_mac_address = eth_mac_addr;
 	/*pNetDev->netdev_ops = ops; */
 #else
-	pNetDev->validate_addr = NULL;
+	pNetDev->validate_addr = eth_validate_addr;
 #endif
 #endif
 

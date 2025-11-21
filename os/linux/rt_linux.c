@@ -1562,12 +1562,15 @@ int RtmpOSNetDevAttach(
 #endif
 #endif
 
+	/* Stop queue BEFORE registration to prevent race conditions
+	   where kernel tries to use the device before it's fully initialized */
+	netif_stop_queue(pNetDev);
+	netif_carrier_off(pNetDev);
+
 	if (rtnl_locked)
 		ret = register_netdevice(pNetDev);
 	else
 		ret = register_netdev(pNetDev);
-
-	netif_stop_queue(pNetDev);
 
 	DBGPRINT(RT_DEBUG_TRACE, ("<---RtmpOSNetDevAttach(), ret=%d\n", ret));
 	if (ret == 0)

@@ -1512,13 +1512,17 @@ int RtmpOSNetDevAttach(
 
 		/* if you don't implement get_stats, just leave the callback function as NULL, a dummy 
 		   function will make kernel panic.
+		   NOTE: ndo_get_stats is deprecated since kernel 3.14, use ndo_get_stats64 instead.
+		   For now, we disable this to prevent kernel panics on modern kernels.
 		 */
+		/* Temporarily disabled - causes kernel panic on modern kernels
 		if (pDevOpHook->get_stats)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,31)
 			pNetDevOps->ndo_get_stats = pDevOpHook->get_stats;
 #else
 			pNetDev->get_stats = pDevOpHook->get_stats;
 #endif
+		*/
 
 		/* OS specific flags, here we used to indicate if we are virtual interface */
 /*		pNetDev->priv_flags = pDevOpHook->priv_flags; */

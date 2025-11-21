@@ -50,9 +50,17 @@
 /* load firmware */
 #define __KERNEL_SYSCALLS__
 #include <linux/unistd.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0)
+#include <linux/uaccess.h>
+#else
 #include <asm/uaccess.h>
+#endif
 #include <asm/types.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,9,0)
+#include <linux/unaligned.h>	/* for get_unaligned() */
+#else
 #include <asm/unaligned.h>	/* for get_unaligned() */
+#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
 #include <linux/pid.h>
@@ -877,8 +885,13 @@ void linux_pci_unmap_single(void *handle, ra_dma_addr_t dma_addr, size_t size, i
 		
 #define GET_OS_PKT_DATATAIL(_pkt) \
 		(RTPKT_TO_OSPKT(_pkt)->tail)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22)
+#define SET_OS_PKT_DATATAIL(_pkt, _start, _len)	\
+		skb_set_tail_pointer(RTPKT_TO_OSPKT(_pkt), (_len))
+#else
 #define SET_OS_PKT_DATATAIL(_pkt, _start, _len)	\
 		((RTPKT_TO_OSPKT(_pkt))->tail) = (unsigned char *)((_start) + (_len))
+#endif
 		
 #define GET_OS_PKT_HEAD(_pkt) \
 		(RTPKT_TO_OSPKT(_pkt)->head)

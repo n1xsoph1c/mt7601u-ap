@@ -3421,7 +3421,16 @@ void dbQueueEnqueue(unsigned char type, unsigned char *data)
 
 	/* Enqueue data*/
 	oldTail->type = type;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+	{
+		struct timespec64 ts;
+		ktime_get_real_ts64(&ts);
+		tval.tv_sec = ts.tv_sec;
+		tval.tv_usec = ts.tv_nsec / 1000;
+	}
+#else
 	do_gettimeofday(&tval);
+#endif
 	oldTail->timestamp = tval.tv_sec*1000000L + tval.tv_usec;
 	memcpy(oldTail->data, data, DBQ_DATA_LENGTH);
 }

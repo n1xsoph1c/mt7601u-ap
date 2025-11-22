@@ -29,6 +29,11 @@ static NDIS_STATUS RTMPAllocUsbBulkBufStruct(
 {
 	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
 
+	if (!pObj || !pObj->pUsb_Dev) {
+		DBGPRINT(RT_DEBUG_ERROR, ("<-- ERROR: NULL USB device in %s!\n", pBufName));
+		return NDIS_STATUS_RESOURCES;
+	}
+
 	*ppUrb = RTUSB_ALLOC_URB(0);
 	if (*ppUrb == NULL)
 	{
@@ -757,7 +762,14 @@ NDIS_STATUS	NICInitRecv(
 	pCmdRspEventContext->pAd = pAd;
 	pCmdRspEventContext->InUse = FALSE;
 	pCmdRspEventContext->Readable	= FALSE;
-	NdisZeroMemory(pCmdRspEventContext->TransferBuffer, CMD_RSP_BULK_SIZE);
+	printk(KERN_ERR "mt7601Uap: [INIT] About to zero CmdRspBuffer=%p, size=%d\n", 
+		pCmdRspEventContext->CmdRspBuffer, CMD_RSP_BULK_SIZE);
+	if (pCmdRspEventContext->CmdRspBuffer != NULL) {
+		NdisZeroMemory(pCmdRspEventContext->CmdRspBuffer, CMD_RSP_BULK_SIZE);
+		printk(KERN_ERR "mt7601Uap: [INIT] Successfully zeroed CmdRspBuffer\n");
+	} else {
+		printk(KERN_ERR "mt7601Uap: [INIT] ERROR: CmdRspBuffer is NULL!\n");
+	}
 
 	DBGPRINT(RT_DEBUG_TRACE, ("<-- NICInitRecv(Status=%d)\n", Status));
 	return Status;
@@ -1062,13 +1074,29 @@ NDIS_STATUS	RTMPAllocTxRxRingMemory(
 
 	Status = NICInitTransmit(pAd);
 	if (Status != NDIS_STATUS_SUCCESS)
-		break;
+		goto done;
+
+	/* Allocate command response event buffer */
+	{
+		PCMD_RSP_CONTEXT pCmdRspEventContext = &pAd->CmdRspEventContext;
+		printk(KERN_ERR "mt7601Uap: [ALLOC] Before allocating CmdRspEventContext buffer\n");
+		Status = RTMPAllocUsbBulkBufStruct(pAd,
+							&pCmdRspEventContext->pUrb,
+							(void **)&pCmdRspEventContext->CmdRspBuffer,
+							CMD_RSP_BULK_SIZE,
+							&pCmdRspEventContext->data_dma,
+							"CmdRspEventContext");
+		printk(KERN_ERR "mt7601Uap: [ALLOC] After allocating CmdRspEventContext, Status=%d, Buffer=%p\n", 
+			Status, pCmdRspEventContext->CmdRspBuffer);
+		if (Status != NDIS_STATUS_SUCCESS)
+			goto done;
+	}
 
 	/* Init receive data structures and related parameters*/
 
 	Status = NICInitRecv(pAd);
 	if (Status != NDIS_STATUS_SUCCESS)
-		break;
+		goto done;
 
 	NdisZeroMemory(&pAd->FragFrame, sizeof(FRAGMENT_FRAME));
 	pAd->FragFrame.pFragPacket =  RTMP_AllocateFragPacketBuffer(pAd, RX_BUFFER_NORMSIZE);
@@ -1078,7 +1106,7 @@ NDIS_STATUS	RTMPAllocTxRxRingMemory(
 		Status = NDIS_STATUS_RESOURCES;
 	}
 
-
+done:
 	DBGPRINT_S(Status, ("<-- RTMPAllocTxRxRingMemory, Status=%x\n", Status));
 	return Status;
 }
@@ -1104,7 +1132,7 @@ VOID	RTMPFreeTxRxRingMemory(
 	IN	PRTMP_ADAPTER	pAd)
 {
 	unsigned int                i, acidx;
-	PTX_CONTEXT			pNullContext   = &pAd->NullContext;
+	PTX_CONTEXT			pNullContext   = &pAd->NullContext[0];
 	PTX_CONTEXT			pPsPollContext = &pAd->PsPollContext;
 	PCMD_RSP_CONTEXT pCmdRspEventContext = &(pAd->CmdRspEventContext);
 
@@ -1126,7 +1154,7 @@ VOID	RTMPFreeTxRxRingMemory(
 	if (pCmdRspEventContext) {
 		RTMPFreeUsbBulkBufStruct(pAd,
 								 &pCmdRspEventContext->pUrb,
-								 (unsigned char * *)&pCmdRspEventContext->TransferBuffer,
+								 (unsigned char * *)&pCmdRspEventContext->CmdRspBuffer,
 								 CMD_RSP_BULK_SIZE,
 								 pCmdRspEventContext->data_dma);
 	}

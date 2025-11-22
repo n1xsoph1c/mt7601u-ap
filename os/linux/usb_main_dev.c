@@ -613,12 +613,15 @@ static int rt2870_probe(
 	unsigned char PermanentAddress[MAC_ADDR_LEN];
 #endif /* PRE_ASSIGN_MAC_ADDR */
 
+	printk(KERN_ERR "mt7601Uap: === rt2870_probe() START === usb_dev=%p, intf=%p\n", usb_dev, intf);
+	
 	DBGPRINT(RT_DEBUG_TRACE, ("rt2870_probe()\n"));
 
 #ifdef CONFIG_PM
 #ifdef USB_SUPPORT_SELECTIVE_SUSPEND
-
+	printk(KERN_ERR "mt7601Uap: [1] Before usb_autopm_get_interface\n");
         res = usb_autopm_get_interface(intf);
+	printk(KERN_ERR "mt7601Uap: [1] After usb_autopm_get_interface, res=%d\n", res);
 	if (res)
 	{
 		DBGPRINT(RT_DEBUG_ERROR, ("rt2870_probe autopm_resume fail\n"));
@@ -642,6 +645,7 @@ static int rt2870_probe(
 /*RtmpDevInit============================================= */
 	/* Allocate RTMP_ADAPTER adapter structure */
 /*	handle = kmalloc(sizeof(struct os_cookie), GFP_KERNEL); */
+	printk(KERN_ERR "mt7601Uap: [2] Before os_alloc_mem for handle\n");
 	os_alloc_mem(NULL, (unsigned char **)&handle, sizeof(struct os_cookie));
 	if (handle == NULL)
 	{
@@ -650,9 +654,11 @@ static int rt2870_probe(
 #endif /* DBG */
 		return -ENOMEM;
 	}
+	printk(KERN_ERR "mt7601Uap: [2] After os_alloc_mem, handle=%p\n", handle);
 	memset(handle, 0, sizeof(struct os_cookie));
 
 	((POS_COOKIE)handle)->pUsb_Dev = usb_dev;
+	printk(KERN_ERR "mt7601Uap: [3] Set pUsb_Dev=%p in handle\n", usb_dev);
 
 
 	/* set/get operators to/from DRIVER module */
@@ -663,7 +669,9 @@ static int rt2870_probe(
 	RtmpNetOpsSet(pRtmpDrvNetOps);
 #endif /* OS_ABL_FUNC_SUPPORT */
 
+	printk(KERN_ERR "mt7601Uap: [4] Before RTMPAllocAdapterBlock\n");
 	rv = RTMPAllocAdapterBlock(handle, &pAd);
+	printk(KERN_ERR "mt7601Uap: [4] After RTMPAllocAdapterBlock, rv=%d, pAd=%p\n", rv, pAd);
 	if (rv != NDIS_STATUS_SUCCESS) 
 	{
 /*		kfree(handle); */
@@ -672,13 +680,19 @@ static int rt2870_probe(
 	}
 
 /*USBDevInit============================================== */
+	printk(KERN_ERR "mt7601Uap: [5] Before USBDevConfigInit\n");
 	if (USBDevConfigInit(usb_dev, intf, pAd) == FALSE)
 		goto err_out_free_radev;
+	printk(KERN_ERR "mt7601Uap: [5] After USBDevConfigInit\n");
 
+	printk(KERN_ERR "mt7601Uap: [6] Before RtmpRaDevCtrlInit\n");
 	RtmpRaDevCtrlInit(pAd, RTMP_DEV_INF_USB);
+	printk(KERN_ERR "mt7601Uap: [6] After RtmpRaDevCtrlInit\n");
 	
 /*NetDevInit============================================== */
+	printk(KERN_ERR "mt7601Uap: [7] Before RtmpPhyNetDevInit\n");
 	net_dev = RtmpPhyNetDevInit(pAd, &netDevHook);
+	printk(KERN_ERR "mt7601Uap: [7] After RtmpPhyNetDevInit, net_dev=%p\n", net_dev);
 	if (net_dev == NULL)
 		goto err_out_free_radev;
 	
@@ -699,12 +713,19 @@ static int rt2870_probe(
 		Or you will suffer NULL pointer in list_add of
 		cfg80211_netdev_notifier_call().
 	*/
+	printk(KERN_ERR "mt7601Uap: [8] Before CFG80211_Register\n");
 	CFG80211_Register(pAd, &(usb_dev->dev), net_dev);
+	printk(KERN_ERR "mt7601Uap: [8] After CFG80211_Register\n");
 }
 #endif /* RT_CFG80211_SUPPORT */
 
+	printk(KERN_ERR "mt7601Uap: [9] Before RTMP_DRIVER_OP_MODE_GET\n");
 	RTMP_DRIVER_OP_MODE_GET(pAd, &OpMode);
+	printk(KERN_ERR "mt7601Uap: [9] After RTMP_DRIVER_OP_MODE_GET, OpMode=%lu\n", OpMode);
+	
+	printk(KERN_ERR "mt7601Uap: [10] Before RtmpOSNetDevAttach\n");
 	status = RtmpOSNetDevAttach(OpMode, net_dev, &netDevHook);
+	printk(KERN_ERR "mt7601Uap: [10] After RtmpOSNetDevAttach, status=%d\n", status);
 	if (status != 0)
 		goto err_out_free_netdev;
 

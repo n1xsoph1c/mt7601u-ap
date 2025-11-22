@@ -1542,7 +1542,7 @@ typedef struct _MULTISSID_STRUCT {
 /* configuration common to OPMODE_AP as well as OPMODE_STA */
 typedef struct _COMMON_CONFIG {
 	bool bCountryFlag;
-	unsigned char CountryCode[3];
+	unsigned char CountryCode[4];
 #ifdef EXT_BUILD_CHANNEL_LIST
 	unsigned char Geography;
 	unsigned char DfsType;

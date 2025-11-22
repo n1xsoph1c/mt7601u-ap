@@ -1507,7 +1507,9 @@ int RtmpOSNetDevAttach(
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,18)
-		pNetDev->ethtool_ops = &RALINK_Ethtool_Ops;
+		/* Temporarily disable ethtool_ops to prevent potential issues
+		   TODO: Re-enable after verifying driver stability */
+		/* pNetDev->ethtool_ops = &RALINK_Ethtool_Ops; */
 #endif
 
 		/* if you don't implement get_stats, just leave the callback function as NULL, a dummy 

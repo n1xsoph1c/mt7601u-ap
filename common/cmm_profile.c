@@ -1973,6 +1973,7 @@ void RTMPSetCountryCode(RTMP_ADAPTER *pAd, char *CountryCode)
 {
 	NdisMoveMemory(pAd->CommonCfg.CountryCode, CountryCode , 2);
 	pAd->CommonCfg.CountryCode[2] = ' ';
+	pAd->CommonCfg.CountryCode[3] = '\0';  /* Null terminate the string */
 	if (strlen((char *) pAd->CommonCfg.CountryCode) != 0)
 		pAd->CommonCfg.bCountryFlag = TRUE;
 
@@ -2049,6 +2050,7 @@ NDIS_STATUS RTMPSetProfileParameters(
 		{
 			pAd->CommonCfg.Geography = BOTH;
 			pAd->CommonCfg.CountryCode[2] = ' ';
+			pAd->CommonCfg.CountryCode[3] = '\0';  /* Null terminate */
 		}
 #endif /* EXT_BUILD_CHANNEL_LIST */
 
